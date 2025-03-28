@@ -51,3 +51,18 @@ return PAM_AUTH_ERR;
 PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv) {
 return PAM_SUCCESS;
 }
+void encrypt_and_log(const char *message) {
+unsigned char key[crypto_secretbox_KEYBYTES];
+unsigned char nonce[crypto_secretbox_NONCEBYTES];
+unsigned char ciphertext[crypto_secretbox_MACBYTES + strlen(message)];
+// Generate a random key (store securely in practice!)
+randombytes_buf(key, sizeof key);
+randombytes_buf(nonce, sizeof nonce);
+crypto_secretbox_easy(ciphertext, (unsigned char *)message, strlen(message), nonce, key);
+FILE *file = fopen("/var/log/pam_vault_encrypted.log", "ab");
+if (file) {
+fwrite(nonce, sizeof nonce, 1, file);
+fwrite(ciphertext, sizeof ciphertext, 1, file);
+fclose(file);
+}
+}
