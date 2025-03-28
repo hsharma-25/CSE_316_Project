@@ -1,3 +1,4 @@
+#include <syslog.h>
 #include <security/pam_modules.h>
 #include <security/pam_ext.h>
 #include <stdio.h>
@@ -32,19 +33,19 @@ return PAM_SUCCESS;
 PAM_EXTERN int pam_sm_authenticate(pam_handle_t *pamh, int flags, int argc, const char **argv) {
 const char *user_password;
 char stored_password[256];
-// Retrieve user input password
 if (pam_get_authtok(pamh, PAM_AUTHTOK, &user_password, NULL) != PAM_SUCCESS) {
+syslog(LOG_AUTH | LOG_WARNING, "Failed to get user password input");
 return PAM_AUTH_ERR;
 }
-// Decrypt the stored password
 if (decrypt_password(stored_password) != PAM_SUCCESS) {
 return PAM_AUTH_ERR;
 }
-// Compare input password with decrypted vault password
 if (strcmp(user_password, stored_password) == 0) {
-return PAM_SUCCESS; // Authentication successful
+syslog(LOG_AUTH | LOG_INFO, "User authentication successful");
+return PAM_SUCCESS;
 } else {
-return PAM_AUTH_ERR; // Password mismatch
+syslog(LOG_AUTH | LOG_WARNING, "User authentication failed - password mismatch");
+return PAM_AUTH_ERR;
 }
 }
 PAM_EXTERN int pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv) {
